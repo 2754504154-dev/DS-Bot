@@ -123,9 +123,20 @@ step_desktop() {
   if need_ports "$pages_port"; then
     setsid node dev/read-pages.mjs "$pages_port" </dev/null >"$home/read-pages.log" 2>&1 &
     echo $! >"$home/read-pages.pid"
-    sleep 1
-    SHOT_DISPLAY=":$DISPLAY_NUM" XAUTHORITY="$home/.xauth" \
-      node dev/desktop-linux/read-check.mjs "$DSH_HARNESS" "$OUT/desktop-read" "$RENDERER_PORT" "$pages_port" Chief --offline || status=1
+    # Wait for the ready line read-pages.mjs prints once it listens, not a fixed delay, so a
+    # slow machine cannot race the check.
+    i=0
+    while [ "$i" -lt 100 ] && ! grep -q "reader sample pages on" "$home/read-pages.log" 2>/dev/null; do
+      i=$((i + 1))
+      sleep 0.1
+    done
+    if grep -q "reader sample pages on" "$home/read-pages.log" 2>/dev/null; then
+      SHOT_DISPLAY=":$DISPLAY_NUM" XAUTHORITY="$home/.xauth" \
+        node dev/desktop-linux/read-check.mjs "$DSH_HARNESS" "$OUT/desktop-read" "$RENDERER_PORT" "$pages_port" Chief --offline || status=1
+    else
+      echo "read-pages server did not become ready; see $home/read-pages.log" >&2
+      status=1
+    fi
     kill -TERM "-$(cat "$home/read-pages.pid")" 2>/dev/null
     rm -f "$home/read-pages.pid"
   else
