@@ -77,6 +77,8 @@ export function install(rt) {
     permissions: rt.permissionCatalog?.() ?? null,
     modelsKey: modelsKey(),
     prefs: state.prefs,
+    // Optional team presets and whether each is on (see presets.js).
+    presets: rt.presetsView(),
     // Whether a Desktop window should serve Bot browser reads (see browser.js).
     browser: rt.browserEnabled,
     // False when config.memory turns memory off: no Memory row or panel.
@@ -425,6 +427,12 @@ export function install(rt) {
         case 'bot-capability':
           await rt.load()
           return ok(await rt.capabilityEndpoint(endpoint, body))
+        case 'apply-preset':
+          await rt.load()
+          return ok(await rt.applyPreset(String(body.id ?? '')))
+        case 'disable-preset':
+          await rt.load()
+          return ok(await rt.disablePreset(String(body.id ?? '')))
         case 'schedules':
         case 'schedule-create':
         case 'schedule-delete':
