@@ -8,7 +8,7 @@ description: How the e-commerce operations team works — read the store backend
 Use this skill whenever the work touches the user's e-commerce store: sourcing, pricing,
 listing, compliance, or day-to-day store operations.
 
-## Work the live store read-only
+## Work the live store read-only (后台只读)
 
 - Treat the store backend as read-only unless the user explicitly asks for a change and
   confirms it. Read, check and report; never place an order, pay, publish a listing,

@@ -3,7 +3,7 @@
 // a shared skill, and lays out a knowledge-base skeleton in the team workspace. Turning
 // it off detaches the skill and keeps the Bots and files. Neither path touches DSH or a
 // team that never asked for the preset.
-import { mkdir } from 'node:fs/promises'
+import { mkdir, writeFile } from 'node:fs/promises'
 import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -32,13 +32,60 @@ const PRESETS = {
     label: 'E-commerce operations',
     summary: 'A sourcing and store-operations Bot team with the ecommerce-thinking skill and a knowledge-base skeleton.',
     marker: '[ecommerce-preset]',
-    knowledge: { root: '电商知识库', dirs: ['选品', '定价', '合规', '任务板', '证据', '日志'] },
+    knowledge: {
+      root: '电商知识库',
+      dirs: ['选品', '定价', '合规', '任务板', '证据', '日志'],
+      // Written once, only when missing, so a user's edits and re-applies are safe.
+      files: {
+        '任务模板.md': [
+          '# 任务模板',
+          '',
+          '- 目标：',
+          '- 范围（本批 SKU，每批 ≤15）：',
+          '- 依据 / 来源：',
+          '- 步骤：',
+          '  1. ',
+          '- 验收 / 证据：',
+          '- 风险与合规检查：',
+          '- 状态：待开始 / 进行中 / 完成',
+          '',
+        ].join('\n'),
+        '缺口登记.md': [
+          '# 缺口登记',
+          '',
+          '记录尚未补齐的规则、资料、数据或权限，等用户或对应 Bot 补齐。',
+          '',
+          '| 日期 | 缺口 / 问题 | 影响 | 需要的资料或决定 | 负责人 | 状态 |',
+          '| --- | --- | --- | --- | --- | --- |',
+          '| | | | | | |',
+          '',
+        ].join('\n'),
+        '导航-MOC.md': [
+          '# 电商知识库导航（MOC）',
+          '',
+          '- [任务模板](任务模板.md)',
+          '- [缺口登记](缺口登记.md)',
+          '- `选品/` 选品与货源',
+          '- `定价/` 定价规则',
+          '- `合规/` 平台与合规规则',
+          '- `任务板/` 当前任务',
+          '- `证据/` 巡检与核对证据',
+          '- `日志/` 工作日志',
+          '',
+          '## 使用约定',
+          '- 后台只读；任何改动先经用户确认。',
+          '- 每批 SKU ≤15，先自检再报告。',
+          '- 合规红线与「禁 1688 拍单直发顾客」不得触碰。',
+          '',
+        ].join('\n'),
+      },
+    },
     main: {
       role: 'Dispatcher',
       instructions: [
         'E-commerce operations preset — you dispatch this team.',
         '- You lead the user\'s e-commerce operations team: Research (platform rules and documents), Sourcing (supply patrol) and Store Ops (day-to-day store work).',
-        '- Work read-only on the store backend: never place an order, pay, publish a listing, change a price or contact a buyer unless the user explicitly asks and confirms.',
+        '- Work read-only on the store backend (后台只读): never place an order, pay, publish a listing, change a price or contact a buyer unless the user explicitly asks and confirms.',
         '- Hold the compliance red lines: no fake reviews, counterfeit or infringing goods, forbidden categories or misleading claims. Tell the user first when something looks wrong.',
         '- Keep each sourcing or listing batch to at most 15 SKUs (每批 SKU ≤15).',
         '- Never place a 1688 order that ships directly to the customer (禁 1688 拍单直发顾客).',
@@ -53,7 +100,9 @@ const PRESETS = {
         avatar: { shape: 'moon' },
         instructions: [
           'You research platform rules and product documents for the user\'s e-commerce store.',
-          '- Work read-only on the store backend; never change anything there.',
+          '- Work read-only on the store backend (后台只读); never change anything there.',
+          '- Keep each batch to at most 15 SKUs (每批 SKU ≤15).',
+          '- Never place a 1688 order that ships directly to the customer (禁 1688 拍单直发顾客).',
           '- Hold the compliance red lines: no fake reviews, counterfeit or infringing goods, forbidden categories or misleading claims.',
           '- Keep sources in 合规/ and 证据/ in the team knowledge base, with the rule or document you checked.',
         ].join('\n'),
@@ -65,7 +114,7 @@ const PRESETS = {
         avatar: { shape: 'gem' },
         instructions: [
           'You patrol supply and compare sourcing options for the user\'s e-commerce store.',
-          '- Work read-only on the store backend; never place an order or pay.',
+          '- Work read-only on the store backend (后台只读); never place an order or pay.',
           '- Keep each sourcing batch to at most 15 SKUs (每批 SKU ≤15), and record what you checked under 证据/.',
           '- Never dropship a 1688 order to the customer (禁 1688 拍单直发顾客).',
           '- Hold the compliance red lines: no counterfeit or infringing goods, forbidden categories or misleading claims.',
@@ -78,7 +127,7 @@ const PRESETS = {
         avatar: { shape: 'beacon' },
         instructions: [
           'You run day-to-day store operations for the user: check orders, listings and messages, and report.',
-          '- Work read-only unless the user explicitly confirms a change; then do only that change.',
+          '- Work read-only (后台只读) unless the user explicitly confirms a change; then do only that change.',
           '- Keep each batch to at most 15 SKUs (每批 SKU ≤15), and log the work under 日志/.',
           '- Hold the compliance red lines: no fake reviews, counterfeit or infringing goods, forbidden categories or misleading claims.',
           '- Never place a 1688 order that ships directly to the customer (禁 1688 拍单直发顾客).',
@@ -121,7 +170,14 @@ export function install(rt) {
     const team = rt.teamFolder()
     const knowledgeRoot = team === undefined ? undefined : join(team, preset.knowledge.root)
     if (knowledgeRoot !== undefined) {
+      await mkdir(knowledgeRoot, { recursive: true })
       for (const dir of preset.knowledge.dirs) await mkdir(join(knowledgeRoot, dir), { recursive: true })
+      // Skeleton files are written only when absent, so a user's edits survive re-applies.
+      for (const [name, body] of Object.entries(preset.knowledge.files)) {
+        await writeFile(join(knowledgeRoot, name), body, { flag: 'wx' }).catch((error) => {
+          if (error?.code !== 'EEXIST') throw error
+        })
+      }
     }
     // The preset's skill is a shared team skill, attached to the preset's own Bots.
     const skill = ecommerceSkill()

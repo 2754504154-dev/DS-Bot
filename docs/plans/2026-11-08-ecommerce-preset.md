@@ -17,7 +17,7 @@
   - 用既有的 Bot 创建 API（`rt.createBot`）创建三个专职 Bot：`Research`（规则/文档研究）、`Sourcing`（货源巡检）、`Store Ops`（店铺运营）。
   - 团队默认提示词遵循：后台只读、合规红线、每批 SKU ≤15、禁 1688 拍单直发顾客。
 - **共享技能 `ecommerce-thinking`。** 技能正文来自 `ds-bot/src/host/skills/ecommerce-thinking/SKILL.md`，保存为团队能力库里的一条 `skill`，并附加到上述四个 Bot（Main 与三个专职）。技能只在预设开启时附加。
-- **知识库骨架。** 在团队工作区下创建 `电商知识库/`，其中包含 `选品/`、`定价/`、`合规/`、`任务板/`、`证据/`、`日志/` 六个目录。已存在的目录不重建、不覆盖。
+- **知识库骨架。** 在团队工作区下创建 `电商知识库/`，其中包含 `选品/`、`定价/`、`合规/`、`任务板/`、`证据/`、`日志/` 六个目录，并写入 `任务模板.md`、`缺口登记.md`、`导航-MOC.md` 三个可用骨架文件。已存在的目录不重建；骨架文件只在缺失时写入，不覆盖用户改过的内容。
 - **关闭。** 关闭 `ecommerce`（`disable_team_preset` 或 `disable-preset`）只把技能从预设建立的 Bot 上解绑，并把预设标记为关闭；Bot、它们的文件、知识库目录和共享技能都保留。再次开启会重新附加技能，但不会重复创建 Bot。
 - **幂等。** 再次开启时按名字复用已存在的 Bot，不重复创建；主 Bot 的 `instructions` 用 `[ecommerce-preset]` 标记判断，已追加过就不再追加。
 - **持久化。** `state.json` 的 `presets.ecommerce` 记录 `{ active, appliedAt, botIds, knowledgeRoot }`；团队视图（`state`）返回 `presets` 字段，说明每个预设是否开启。
