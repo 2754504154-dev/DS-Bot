@@ -62,3 +62,4 @@
 | [IM](2026-11-04-im.md) | 在微信、飞书、钉钉、企业微信、QQ、Telegram、Discord、Slack 里和 Bot 或群说话：IM 机器人绑一个 Bot，群绑 DS Bot 群；只认配对过的账号；回复和卡片发回聊天软件；只有占着团队锁的 dsh 连接 |
 | [手机 App](2026-10-24-mobile-app.md) | iOS 和 Android 远程操控电脑上的 Bot 团队：手机不跑 Agent；扫码配对、端到端加密、电脑只往外连；完整功能，高权限操作要解锁手机 |
 | [Office 文档](2026-10-27-office-documents.md) | Bot 离线处理 .docx/.pptx/.xlsx：应用带的 payload、`office.js` 命令行、office 路由换成带 `office-tools` 的版本 |
+| [电商运营预设](2026-11-08-ecommerce-preset.md) | 可选的「电商运营」团队模板：一键建调度+研究+货源巡检+店铺运营四类 Bot、启用 ecommerce-thinking 技能、在团队工作区建 选品/定价/合规/任务板/证据/日志 知识库骨架；默认关闭，可关可再开 |
